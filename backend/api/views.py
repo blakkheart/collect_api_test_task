@@ -1,16 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from rest_framework import viewsets, mixins
 from rest_framework.response import Response
-from rest_framework import generics, serializers, status, viewsets
+from rest_framework import generics, serializers, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
-from rest_framework.response import Response
-
+from django.core.mail import send_mail
+from django.conf import settings
 
 from payment.models import (
     Reason, Payment, Collect, CollectPayment
@@ -48,6 +47,9 @@ class ReasonViewSet(viewsets.ViewSet):
 
 class CollectViewSet(viewsets.ModelViewSet):
     '''Вьюсет для создания Группового денежного сбора.'''
+    http_method_names = ['get', 'post', 'delete', 'patch']
+
+    # TODO добавить пермишн
 
     def get_queryset(self):
         return Collect.objects.all()
@@ -57,12 +59,28 @@ class CollectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        subject = 'Спасибо за огранизцию группового сбора!'
+        message = (
+            f'Привет! Спасибо за организацию {serializer.data.get("title")}\n'
+            f'Держим кулачки, что удастся собрать деньги до {serializer.data.get("end_datetime")}'
+        )
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[self.request.user.email],
+            fail_silently=False,
+        )
 
 
-class PaymentViewSet(mixins.CreateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.RetrieveModelMixin,
-                     viewsets.GenericViewSet):
+class PaymentViewSet(
+        mixins.CreateModelMixin,
+        mixins.ListModelMixin,
+        mixins.RetrieveModelMixin,
+        viewsets.GenericViewSet
+):
+    '''Вьюсет для создания Платежа для сбора.'''
+
     def get_queryset(self):
         return Payment.objects.all()
 
@@ -74,4 +92,30 @@ class PaymentViewSet(mixins.CreateModelMixin,
         payment = serializer.instance
         collect = get_object_or_404(
             Collect, pk=self.kwargs.get('collection_id'))
+        collect.amount_collected += payment.amount
+        if not collect.payments.filter(email=payment.email):
+            collect.amount_of_people_donated += 1
+        collect.save()
         CollectPayment.objects.create(collect=collect, payment=payment)
+        subject = 'Спасибо за ваш денежный сбор!'
+        message = (
+            f'Привет! Спасибо за денежный сбор в размере {payment.amount}р.\n'
+            f'Благодоря тебе, мы собрали уже {collect.amount_collected}р.!'
+        )
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[payment.email],
+            fail_silently=False,
+        )
+
+
+class UserPayments(viewsets.ViewSet):
+    '''Вьюсет для просмотра Платежей для сбора у пользователя.'''
+
+    def list(self, request):
+        user = request.user
+        payment = Payment.objects.filter(email=user.email)
+        serializer = PaymentSerializer(payment, many=True)
+        return Response(serializer.data)

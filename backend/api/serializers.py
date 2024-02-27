@@ -45,6 +45,12 @@ class PaymentSerializer(serializers.ModelSerializer):
             'donated_at',
         )
 
+    # def to_representation(self, instance):
+    #     if instance.invisible is True:
+    #         instance.amount = 'Скрыто'
+    #         instance.save()
+    #     return super().to_representation(instance)
+
 
 class CollectSerializer(serializers.ModelSerializer):
     '''Сериализатор для модели Группового денежного сбора.'''
@@ -64,7 +70,7 @@ class CollectSerializer(serializers.ModelSerializer):
             'description',
             'amount_to_collect',
             'amount_collected',
-            'anount_of_people_donated',
+            'amount_of_people_donated',
             'cover_image',
             'end_datetime',
             'payments',
@@ -73,11 +79,27 @@ class CollectSerializer(serializers.ModelSerializer):
             'id',
             'author',
             'amount_collected',
-            'anount_of_people_donated',
+            'amount_of_people_donated',
             'payments',
         )
 
     def create(self, validated_data):
         reason_data = validated_data.pop('reasons')
-        reason = Reason.objects.create(**reason_data)
+        reason, _ = Reason.objects.get_or_create(**reason_data)
         return Collect.objects.create(reasons=reason, **validated_data)
+
+    def update(self, instance, validated_data):
+        reason_data = validated_data.pop('reasons')
+        reason, created = Reason.objects.get_or_create(**reason_data)
+        instance.title = validated_data.get('title', instance.title)
+        instance.reasons = reason if reason else instance.reason
+        instance.description = validated_data.get(
+            'description', instance.description)
+        instance.amount_to_collect = validated_data.get(
+            'amount_to_collect', instance.amount_to_collect)
+        instance.cover_image = validated_data.get(
+            'cover_image', instance.cover_image)
+        instance.end_datetime = validated_data.get(
+            'end_datetime', instance.end_datetime)
+        instance.save()
+        return instance

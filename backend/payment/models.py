@@ -7,7 +7,8 @@ User = get_user_model()
 
 class Reason(models.Model):
     '''Модель, описывающая причины сбора.'''
-    title = models.CharField(max_length=40, validators=[MinLengthValidator(4)])
+    title = models.CharField(max_length=40,
+                             validators=[MinLengthValidator(4)])
 
     def __str__(self) -> str:
         return self.title
@@ -40,7 +41,7 @@ class Collect(models.Model):
     # перевести в decimal ?
     amount_to_collect = models.PositiveIntegerField(null=True, blank=True)
     amount_collected = models.PositiveIntegerField(default=0)
-    anount_of_people_donated = models.PositiveIntegerField(default=0)
+    amount_of_people_donated = models.PositiveIntegerField(default=0)
     # 4mb ограничение
     cover_image = models.ImageField(upload_to='covers/')
     end_datetime = models.DateTimeField(auto_now=False, auto_now_add=False)
