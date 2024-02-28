@@ -6,10 +6,7 @@ from rest_framework import generics, serializers, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
 )
-from django.core.mail import send_mail
-from django.conf import settings
 
 from payment.models import (
     Reason, Payment, Collect, CollectPayment
@@ -22,6 +19,8 @@ from api.serializers import (
 )
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from api.tasks import send_email
+
 User = get_user_model()
 
 
@@ -53,7 +52,11 @@ class CollectViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrReadOnly, )
 
     def get_queryset(self):
-        return Collect.objects.all()
+        return (
+            Collect.objects
+            .select_related('author', 'reasons')
+            .prefetch_related('payments')
+        )
 
     def get_serializer_class(self):
         return CollectSerializer
@@ -65,13 +68,12 @@ class CollectViewSet(viewsets.ModelViewSet):
             f'Привет! Спасибо за организацию {serializer.data.get("title")}\n'
             f'Держим кулачки, что сумму удастся собрать до {serializer.data.get("end_datetime")}'
         )
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[self.request.user.email],
-            fail_silently=False,
-        )
+        recipients = [self.request.user.email]
+        send_email.delay(subject, message, recipients)
+
+    @method_decorator(cache_page(timeout=30))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
 
 class PaymentViewSet(
@@ -82,6 +84,7 @@ class PaymentViewSet(
 ):
     '''Вьюсет для создания Платежа для сбора.'''
     # TODO : ordering
+    # TODO : а нам вообще надо ли давать get запрос тут?
 
     def get_queryset(self):
         return Payment.objects.all()
@@ -104,17 +107,8 @@ class PaymentViewSet(
             f'Привет! Спасибо за денежный сбор в размере {payment.amount}р.\n'
             f'Благодоря тебе, мы собрали уже {collect.amount_collected}р.!'
         )
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[payment.email],
-            fail_silently=False,
-        )
-
-    @method_decorator(cache_page(timeout=60*15))
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
+        recipients = [self.request.user.email]
+        send_email.delay(subject, message, recipients)
 
 
 class UserPayments(viewsets.ViewSet):

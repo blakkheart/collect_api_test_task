@@ -14,6 +14,8 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
 
+if DEBUG:
+    INTERNAL_IPS = ['127.0.0.1', 'localhost', ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,12 +30,15 @@ INSTALLED_APPS = [
     'payment.apps.PaymentConfig',
 
     # 3rd party apps
+    'debug_toolbar',
     'rest_framework',
     'djoser',
     'rest_framework.authtoken',
+
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -72,7 +77,6 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', ''),
         'PORT': os.getenv('DB_PORT', 5432),
-        # 'PG_USER': os.getenv('PG_USER', default='user')
     }
 }
 
@@ -123,7 +127,7 @@ REST_FRAMEWORK = {
     ],
 }
 # 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
 EMAIL_PORT = os.getenv('EMAIL_PORT', 465)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
@@ -143,4 +147,7 @@ CACHES = {
         'KEY_PREFIX': 'collect',
         'TIMEOUT': 60*15,
     }
+}
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: bool(request.headers.get('x-requested-with') != 'XMLHttpRequest'),
 }
