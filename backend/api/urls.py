@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from django.conf import settings
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from api.views import (
     ReasonViewSet,
@@ -19,6 +20,8 @@ urlpatterns = [
     path('v1/', include(router_v1.urls)),
     path('v1/auth/', include('djoser.urls')),
     path('v1/auth/', include('djoser.urls.authtoken')),
+    path('v1/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
 ]
 
 

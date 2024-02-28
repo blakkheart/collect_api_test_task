@@ -4,10 +4,10 @@ from django.db import models
 
 class User(AbstractUser):
     '''Пользователь системы.'''
-    middle_name = models.CharField(max_length=150, blank=True)
-    birthdate = models.DateField(
-        auto_now=False, auto_now_add=False, blank=True, null=True)
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
 
 # TODO: не забыть про модель и добавить поля
-# TODO: поменять логику регистрации пользователя, ибо требует юзернейм при регистрации

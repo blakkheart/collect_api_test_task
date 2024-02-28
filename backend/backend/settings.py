@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'rest_framework.authtoken',
+    'drf_spectacular',
 
 ]
 
@@ -125,8 +126,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DATETIME_FORMAT': "%Y-%m-%dT%H:%M:%S.%fZ",
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
-# 'django.core.mail.backends.smtp.EmailBackend'
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
 EMAIL_PORT = os.getenv('EMAIL_PORT', 465)
@@ -150,4 +156,16 @@ CACHES = {
 }
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: bool(request.headers.get('x-requested-with') != 'XMLHttpRequest'),
+}
+
+DJOSER = {
+    'LOGIN_FIELD': 'email'
+}
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Групповой сбор денег.',
+    'DESCRIPTION': 'Тестовое задание Групповой сбор денег.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }

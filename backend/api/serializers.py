@@ -37,22 +37,23 @@ class PaymentSerializer(serializers.ModelSerializer):
             'invisible',
             'first_name_user',
             'last_name_user',
-            'middle_name_user',
-            'email',
+            'email_user',
         )
         read_only_fields = (
             'id',
             'donated_at',
         )
 
-    # def to_representation(self, instance):
-    #     if instance.invisible is True:
-    #         instance.amount = 'Скрыто'
-    #         instance.save()
-    #     return super().to_representation(instance)
+    def validate(self, data):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            data['first_name_user'] = user.first_name
+            data['email_user'] = user.email
+            data['last_name_user'] = user.last_name
+        return data
 
 
-class CollectSerializer(serializers.ModelSerializer):
+class CreateCollectSerializer(serializers.ModelSerializer):
     '''Сериализатор для модели Группового денежного сбора.'''
 
     author = UserSerializer(read_only=True)
@@ -73,6 +74,7 @@ class CollectSerializer(serializers.ModelSerializer):
             'amount_of_people_donated',
             'cover_image',
             'end_datetime',
+            'created_at',
             'payments',
         )
         read_only_fields = (
@@ -80,14 +82,17 @@ class CollectSerializer(serializers.ModelSerializer):
             'author',
             'amount_collected',
             'amount_of_people_donated',
+            'created_at',
             'payments',
         )
 
+    @transaction.atomic
     def create(self, validated_data):
         reason_data = validated_data.pop('reasons')
         reason, _ = Reason.objects.get_or_create(**reason_data)
         return Collect.objects.create(reasons=reason, **validated_data)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         reason_data = validated_data.pop('reasons')
         reason, created = Reason.objects.get_or_create(**reason_data)
@@ -103,3 +108,34 @@ class CollectSerializer(serializers.ModelSerializer):
             'end_datetime', instance.end_datetime)
         instance.save()
         return instance
+
+
+class CollectSerializer(serializers.ModelSerializer):
+    '''Сериализатор для модели Группового денежного сбора.'''
+
+    author = UserSerializer(read_only=True)
+    reasons = ReasonSerializer()
+    cover_image = Base64ImageField()
+
+    class Meta:
+        model = Collect
+        fields = (
+            'id',
+            'author',
+            'title',
+            'reasons',
+            'description',
+            'amount_to_collect',
+            'amount_collected',
+            'amount_of_people_donated',
+            'cover_image',
+            'end_datetime',
+            'created_at',
+        )
+        read_only_fields = (
+            'id',
+            'author',
+            'amount_collected',
+            'amount_of_people_donated',
+            'created_at',
+        )
