@@ -16,6 +16,6 @@ router_v1.register(r'collections/(?P<collection_id>\d+)/payments',
 
 urlpatterns = [
     path('v1/', include(router_v1.urls)),
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.authtoken')),
+    path('v1/auth/', include('djoser.urls')),
+    path('v1/auth/', include('djoser.urls.authtoken')),
 ]

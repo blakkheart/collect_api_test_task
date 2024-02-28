@@ -14,12 +14,14 @@ from django.conf import settings
 from payment.models import (
     Reason, Payment, Collect, CollectPayment
 )
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     ReasonSerializer,
     CollectSerializer,
     PaymentSerializer,
 )
-
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 User = get_user_model()
 
 
@@ -48,8 +50,7 @@ class ReasonViewSet(viewsets.ViewSet):
 class CollectViewSet(viewsets.ModelViewSet):
     '''Вьюсет для создания Группового денежного сбора.'''
     http_method_names = ['get', 'post', 'delete', 'patch']
-
-    # TODO добавить пермишн
+    permission_classes = (IsAuthorOrReadOnly, )
 
     def get_queryset(self):
         return Collect.objects.all()
@@ -62,7 +63,7 @@ class CollectViewSet(viewsets.ModelViewSet):
         subject = 'Спасибо за огранизцию группового сбора!'
         message = (
             f'Привет! Спасибо за организацию {serializer.data.get("title")}\n'
-            f'Держим кулачки, что удастся собрать деньги до {serializer.data.get("end_datetime")}'
+            f'Держим кулачки, что сумму удастся собрать до {serializer.data.get("end_datetime")}'
         )
         send_mail(
             subject=subject,
@@ -80,6 +81,7 @@ class PaymentViewSet(
         viewsets.GenericViewSet
 ):
     '''Вьюсет для создания Платежа для сбора.'''
+    # TODO : ordering
 
     def get_queryset(self):
         return Payment.objects.all()
@@ -109,6 +111,10 @@ class PaymentViewSet(
             recipient_list=[payment.email],
             fail_silently=False,
         )
+
+    @method_decorator(cache_page(timeout=60*15))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
 
 class UserPayments(viewsets.ViewSet):

@@ -66,8 +66,13 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'payments'),
+        'USER': os.getenv('POSTGRES_USER', 'payments_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', 5432),
+        # 'PG_USER': os.getenv('PG_USER', default='user')
     }
 }
 
@@ -119,9 +124,23 @@ REST_FRAMEWORK = {
 }
 # 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.yandex.ru')
 EMAIL_PORT = os.getenv('EMAIL_PORT', 465)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'True')
+
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379')
+CELERY_RESULT_BACKEND = os.getenv(
+    'CELERY_RESULT_BACKEND', 'db+sqlite:///celery.sqlite')
+
+
+CACHES = {
+    'default': {
+        "BACKEND": 'django.core.cache.backends.redis.RedisCache',
+        "LOCATION": os.getenv('REDIS_URL', 'redis://redis:6379'),
+        'KEY_PREFIX': 'collect',
+        'TIMEOUT': 60*15,
+    }
+}

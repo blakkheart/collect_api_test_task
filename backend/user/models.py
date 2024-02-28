@@ -7,3 +7,6 @@ class User(AbstractUser):
     middle_name = models.CharField(max_length=150, blank=True)
     birthdate = models.DateField(
         auto_now=False, auto_now_add=False, blank=True, null=True)
+
+
+# TODO: не забыть про модель и добавить поля

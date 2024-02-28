@@ -42,7 +42,7 @@ class Collect(models.Model):
     amount_to_collect = models.PositiveIntegerField(null=True, blank=True)
     amount_collected = models.PositiveIntegerField(default=0)
     amount_of_people_donated = models.PositiveIntegerField(default=0)
-    # 4mb ограничение
+    # TODO:4mb ограничение
     cover_image = models.ImageField(upload_to='covers/')
     end_datetime = models.DateTimeField(auto_now=False, auto_now_add=False)
     payments = models.ManyToManyField(
