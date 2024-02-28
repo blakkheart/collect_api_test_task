@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
-
+from django.db import transaction
 from payment.validators import validate_file_size
 
 User = get_user_model()
@@ -68,3 +68,10 @@ class CollectPayment(models.Model):
 
     def __str__(self) -> str:
         return f'{self.collect} + {self.payment}'
+
+    @transaction.atomic
+    def save(self, *args, **kwargs) -> None:
+        self.collect.amount_collected += self.payment.amount
+        if not self.collect.payments.filter(email_user=self.payment.email_user):
+            self.collect.amount_of_people_donated += 1
+        return super().save(*args, **kwargs)

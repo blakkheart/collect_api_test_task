@@ -1,13 +1,16 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
-from rest_framework import generics, serializers, status, viewsets, mixins
-from rest_framework.decorators import action
+from rest_framework import status, viewsets, mixins
 from rest_framework.permissions import (
     IsAuthenticated,
 )
-from django.db import transaction
+
+
 from payment.models import (
     Reason, Payment, Collect, CollectPayment
 )
@@ -18,11 +21,8 @@ from api.serializers import (
     PaymentSerializer,
     CreateCollectSerializer,
 )
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from api.tasks import send_email
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
-from drf_spectacular.types import OpenApiTypes
+
 
 User = get_user_model()
 
@@ -143,10 +143,6 @@ class PaymentViewSet(
         payment = serializer.instance
         collect = get_object_or_404(
             Collect, pk=self.kwargs.get('collection_id'))
-        collect.amount_collected += payment.amount
-        if not collect.payments.filter(email_user=payment.email_user):
-            collect.amount_of_people_donated += 1
-        collect.save()
         CollectPayment.objects.create(collect=collect, payment=payment)
         subject = 'Спасибо за ваш денежный сбор!'
         message = (
