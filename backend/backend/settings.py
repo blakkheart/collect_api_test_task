@@ -15,8 +15,6 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
 
-if DEBUG:
-    INTERNAL_IPS = ['127.0.0.1', 'localhost', ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,7 +29,6 @@ INSTALLED_APPS = [
     'payment.apps.PaymentConfig',
 
     # 3rd party apps
-    'debug_toolbar',
     'rest_framework',
     'djoser',
     'rest_framework.authtoken',
@@ -40,7 +37,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -156,9 +152,7 @@ CACHES = {
         'TIMEOUT': 60*15,
     }
 }
-DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': lambda request: bool(request.headers.get('x-requested-with') != 'XMLHttpRequest'),
-}
+
 
 DJOSER = {
     'LOGIN_FIELD': 'email'

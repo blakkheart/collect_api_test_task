@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import BaseCommand
 from django.db import transaction
 
-from payment.factories import CollectWithGroupFactory, UserFactory
+from payment.factories import CollectWithGroupFactory
 
 User = get_user_model()
 
@@ -14,8 +14,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def generate_users(self, amount: int):
-        UserFactory.create_batch(amount)
-        CollectWithGroupFactory.create_batch(amount)
+        print('Приступаем к созданию!', flush=True)
+        for i in range(1, amount+1):
+            print(f'Создаем {i} объект!', flush=True)
+            CollectWithGroupFactory.create()
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,7 +25,7 @@ class Command(BaseCommand):
             '--amount',
             action='store',
             default=10,
-            help='Задание количество мок-даты.'
+            help='Задание количества мок-даты.'
         )
 
     def handle(self, *args: Any, **options: Any) -> None:

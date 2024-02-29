@@ -13,10 +13,12 @@ User = get_user_model()
 
 
 class UserFactory(DjangoModelFactory):
+    '''Фабкрика пользователей.'''
+
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
     username = factory.Sequence(lambda n: f'User-{n}')
-    email = factory.Faker('email')
+    email = factory.Sequence(lambda n: f'email{n}@example.org')
     password = factory.Faker('password')
 
     class Meta:
@@ -25,6 +27,8 @@ class UserFactory(DjangoModelFactory):
 
 
 class ReasonFactory(DjangoModelFactory):
+    '''Фабкрика причин.'''
+
     title = factory.Faker('word')
 
     class Meta:
@@ -33,6 +37,8 @@ class ReasonFactory(DjangoModelFactory):
 
 
 class PaymentFactory(DjangoModelFactory):
+    '''Фабкрика платежей.'''
+
     amount = factory.Faker('random_int', min=10)
     invisible = factory.Faker('boolean')
     first_name_user = factory.Faker('first_name')
@@ -44,6 +50,8 @@ class PaymentFactory(DjangoModelFactory):
 
 
 class CollectFactory(DjangoModelFactory):
+    '''Фабкрика группового сбора.'''
+
     author = factory.SubFactory(UserFactory)
     title = factory.Faker(
         "sentence",
@@ -71,6 +79,8 @@ class CollectFactory(DjangoModelFactory):
 
 
 class CollectPaymentFactory(DjangoModelFactory):
+    '''Фабкрика для through модели сбора и платежей.'''
+
     collect = factory.SubFactory(CollectFactory)
     payment = factory.SubFactory(PaymentFactory)
 
@@ -80,8 +90,10 @@ class CollectPaymentFactory(DjangoModelFactory):
 
 
 class CollectWithGroupFactory(CollectFactory):
+    '''Фабрика для группового сбора с полем many-to-many.'''
+
     payments = factory.RelatedFactoryList(
         CollectPaymentFactory,
         factory_related_name='collect',
-        size=lambda: random.randint(1, 100),
+        size=lambda: random.randint(1, 10),
     )

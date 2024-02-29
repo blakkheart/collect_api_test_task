@@ -90,6 +90,7 @@ class CollectViewSet(viewsets.ModelViewSet):
         description=(
             'Позволяет создать Группой сбор.'
             'После создания сбора отправляется письмо на почту создавшему.'
+            'Указывать amount_to_collect не обязательно.'
         )
     )
     @transaction.atomic
