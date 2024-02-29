@@ -1,13 +1,13 @@
 import random
-import factory
 
-from factory.django import DjangoModelFactory
-from django.contrib.auth import get_user_model
-from payment.models import (
-    Reason, Collect, CollectPayment, Payment,
-)
+import factory
 import pytz
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from factory.django import DjangoModelFactory
+
+from payment.models import Collect, CollectPayment, Payment, Reason
+
 
 User = get_user_model()
 

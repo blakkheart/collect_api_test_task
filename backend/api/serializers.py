@@ -1,13 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from drf_extra_fields.fields import Base64ImageField
 from djoser.serializers import UserSerializer
+from drf_extra_fields.fields import Base64ImageField
+from payment.models import Collect, Payment, Reason
 from rest_framework import serializers
-
-
-from payment.models import (
-    Reason, Payment, Collect,
-)
 
 
 User = get_user_model()
@@ -53,6 +49,33 @@ class PaymentSerializer(serializers.ModelSerializer):
             data['last_name_user'] = user.last_name
         return data
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.invisible is True:
+            representation['amount'] = 'Hidden'
+        return representation
+
+
+class UserPaymentSerializer(PaymentSerializer):
+    '''Сериализатор для предоставления всех платежей пользователя.'''
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        collect_payment = self.context.get('collect_payment')
+        collect_payment = collect_payment.get(payment=instance)
+        collect = collect_payment.collect
+        representation['amount'] = instance.amount
+        representation['payments'] = {
+            'title': collect.title,
+            'author': collect.author.email,
+            'description': collect.description,
+            'amount_to_collect': collect.amount_to_collect,
+            'amount_collected': collect.amount_collected,
+            'amount_of_people_donated': collect.amount_of_people_donated,
+            'end_datetime': collect.end_datetime,
+        }
+        return representation
+
 
 class CreateCollectSerializer(serializers.ModelSerializer):
     '''Сериализатор для модели Группового денежного сбора.'''
@@ -96,7 +119,7 @@ class CreateCollectSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         reason_data = validated_data.pop('reasons')
-        reason, created = Reason.objects.get_or_create(**reason_data)
+        reason, _ = Reason.objects.get_or_create(**reason_data)
         instance.title = validated_data.get('title', instance.title)
         instance.reasons = reason if reason else instance.reason
         instance.description = validated_data.get(

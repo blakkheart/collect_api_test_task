@@ -4,24 +4,19 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema
+from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins
-from rest_framework.permissions import (
-    IsAuthenticated,
-)
 
-
-from payment.models import (
-    Reason, Payment, Collect, CollectPayment
-)
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
-    ReasonSerializer,
     CollectSerializer,
-    PaymentSerializer,
     CreateCollectSerializer,
+    PaymentSerializer,
+    ReasonSerializer,
+    UserPaymentSerializer,
 )
 from api.tasks import send_email
+from payment.models import Collect, CollectPayment, Payment, Reason
 
 
 User = get_user_model()
@@ -101,8 +96,9 @@ class CollectViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
         subject = 'Спасибо за огранизцию группового сбора!'
         message = (
-            f'Привет! Спасибо за организацию {serializer.data.get("title")}\n'
-            f'Держим кулачки, что сумму удастся собрать до {serializer.data.get("end_datetime")}'
+            'Привет!\n'
+            f'Спасибо за организацию сбора {serializer.data.get("title")}\n'
+            f'Держим кулачки, что сумму удастся собрать!'
         )
         recipients = [self.request.user.email]
         send_email.delay(subject, message, recipients)
@@ -146,7 +142,8 @@ class PaymentViewSet(
         CollectPayment.objects.create(collect=collect, payment=payment)
         subject = 'Спасибо за ваш денежный сбор!'
         message = (
-            f'Привет! Спасибо за денежный сбор в размере {payment.amount}р.\n'
+            'Привет!\n'
+            f'Спасибо за денежный сбор в размере {payment.amount}р.\n'
             f'Благодоря тебе, мы собрали уже {collect.amount_collected}р.!'
         )
         recipients = [payment.email_user]
@@ -157,11 +154,31 @@ class PaymentViewSet(
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserPayments(viewsets.ViewSet):
+@extend_schema(
+    request=UserPaymentSerializer,
+    responses={200: UserPaymentSerializer},
+    tags=['Пользовательские платежи.'],
+    description=(
+        'Позволяет посмотреть платежи пользователя, делающего запрос.'
+    )
+)
+class UserPaymentsViewSet(viewsets.ViewSet):
     '''Вьюсет для просмотра Платежей для сбора у пользователя.'''
 
     def list(self, request):
         user = request.user
-        payment = Payment.objects.filter(email=user.email)
-        serializer = PaymentSerializer(payment, many=True)
+        payment = Payment.objects.filter(email_user=user.email)
+        collect_payment = CollectPayment.objects.select_related(
+            'payment', 'collect').filter(payment__email_user=user.email)
+        serializer = UserPaymentSerializer(
+            payment,
+            many=True,
+            context={
+                'collect_payment': collect_payment
+            }
+        )
         return Response(serializer.data)
+
+    @method_decorator(cache_page(timeout=30*60))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)

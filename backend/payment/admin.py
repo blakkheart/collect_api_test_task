@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from payment.models import Collect, Payment, CollectPayment, Reason
+from payment.models import Collect, CollectPayment, Payment, Reason
 
 
 @admin.register(Collect)
@@ -98,3 +98,8 @@ class CollectPaymentAdmin(admin.ModelAdmin):
         'payment',
     )
     list_per_page = 25
+
+
+admin.site.site_header = 'Администрирование Сбор денег'
+admin.site.index_title = 'Администрирование сайта Сбор денег'
+admin.site.empty_value_display = 'Не задано'

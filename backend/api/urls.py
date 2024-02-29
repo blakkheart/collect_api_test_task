@@ -1,13 +1,15 @@
-from django.urls import include, path
 from django.conf import settings
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
 from api.views import (
-    ReasonViewSet,
     CollectViewSet,
     PaymentViewSet,
+    ReasonViewSet,
+    UserPaymentsViewSet,
 )
+
 
 router_v1 = DefaultRouter()
 
@@ -21,6 +23,8 @@ router_v1.register(
 
 urlpatterns = [
     path('v1/', include(router_v1.urls)),
+    path('v1/user/payments/', UserPaymentsViewSet.as_view(
+        {'get': 'list'}), name='user_payment'),
     path('v1/auth/', include('djoser.urls')),
     path('v1/auth/', include('djoser.urls.authtoken')),
     path('v1/schema/', SpectacularAPIView.as_view(), name='schema'),
