@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.permissions import IsAuthorOrReadOnly
@@ -164,6 +165,7 @@ class PaymentViewSet(
 )
 class UserPaymentsViewSet(viewsets.ViewSet):
     '''Вьюсет для просмотра Платежей для сбора у пользователя.'''
+    permission_classes = (IsAuthenticated,)
 
     def list(self, request):
         user = request.user
