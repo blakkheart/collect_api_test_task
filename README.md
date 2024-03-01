@@ -133,20 +133,20 @@ Cервер запустится по адресу **localhost:8000** и вы с
 
 ### Дополнительно
 Вы можете создать суперпользователя и изменять значения через админ-панель по адресу **localhost:8000/admin/** :
-``bash
+```bash
 docker compose exec backend python manage.py createsuperuser
-``
+```
 Вы также можете наполнить БД проекта мок-датой с помощью следующей команды:
-``bash
+```bash
 docker compose exec backend python manage.py load_mockdata
-``
+```
 С использованием параметра `-a (--amount)` вы можете задать количество мок-объектов, которые будут занесены в БД (стандартное значение 10).
 Например, с помощью команды ниже можно занести 100 мок-объектов в БД:	
-``bash
+```bash
 docker compose exec backend python manage.py load_mockdata --amount 100
-``
+```
 
 Присутствуют тесты, которые можно запустить командой: 
-``bash
+```bash
 docker compose exec backend pytest
-``
+```
