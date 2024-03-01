@@ -65,7 +65,7 @@ class UserPaymentSerializer(PaymentSerializer):
         collect_payment = collect_payment.get(payment=instance)
         collect = collect_payment.collect
         representation['amount'] = instance.amount
-        representation['payments'] = {
+        representation['collect'] = {
             'title': collect.title,
             'author': collect.author.email,
             'description': collect.description,
@@ -118,10 +118,11 @@ class CreateCollectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        reason_data = validated_data.pop('reasons')
-        reason, _ = Reason.objects.get_or_create(**reason_data)
+        reason_data = validated_data.pop('reasons', None)
+        if reason_data:
+            reason, _ = Reason.objects.get_or_create(**reason_data)
+            instance.reasons = reason
         instance.title = validated_data.get('title', instance.title)
-        instance.reasons = reason if reason else instance.reason
         instance.description = validated_data.get(
             'description', instance.description)
         instance.amount_to_collect = validated_data.get(

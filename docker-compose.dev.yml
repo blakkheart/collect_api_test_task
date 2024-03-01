@@ -1,0 +1,46 @@
+version: '3'
+
+volumes:
+  pg_data:
+  pdf:
+  media:
+  static:
+
+services:
+  
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+  db:
+    image: postgres:16.2
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
+    ports:
+      - 5432:5432
+
+  celery_worker:
+    build: ./backend/
+    env_file: .env
+    depends_on:
+      - redis
+    command: celery -A backend worker -l info
+    volumes:
+      - media:/app/media/covers
+
+  celery_beat:
+    build: ./backend/
+    env_file: .env
+    depends_on:
+      - celery_worker
+    command: celery -A backend beat -l info
+    volumes:
+      - media:/app/media/covers

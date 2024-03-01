@@ -7,6 +7,7 @@ from api.views import (
     CollectViewSet,
     PaymentViewSet,
     ReasonViewSet,
+    UserCollectViewSet,
     UserPaymentsViewSet,
 )
 
@@ -23,7 +24,9 @@ router_v1.register(
 
 urlpatterns = [
     path('v1/', include(router_v1.urls)),
-    path('v1/user/payments/', UserPaymentsViewSet.as_view(
+    path('v1/user/<int:user_id>/collections/', UserCollectViewSet.as_view(
+        {'get': 'list'}), name='user_collect'),
+    path('v1/user/<int:user_id>/payments/', UserPaymentsViewSet.as_view(
         {'get': 'list'}), name='user_payment'),
     path('v1/auth/', include('djoser.urls')),
     path('v1/auth/', include('djoser.urls.authtoken')),

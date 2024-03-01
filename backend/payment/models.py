@@ -126,9 +126,12 @@ class CollectPayment(models.Model):
 
     @transaction.atomic
     def save(self, *args, **kwargs) -> None:
+        '''Изменение Группового сбора с учетом поступившего платежа.'''
+
         self.collect.amount_collected += self.payment.amount
         if not self.collect.payments.filter(email_user=self.payment.email_user):
             self.collect.amount_of_people_donated += 1
+        self.collect.save()
         return super().save(*args, **kwargs)
 
     class Meta:

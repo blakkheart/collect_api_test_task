@@ -5,10 +5,13 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 
-from api.permissions import IsAuthorOrReadOnly
+from api.permissions import IsAuthorOrReadOnly, IsUser
 from api.serializers import (
     CollectSerializer,
     CreateCollectSerializer,
@@ -28,6 +31,7 @@ User = get_user_model()
 )
 class ReasonViewSet(viewsets.ViewSet):
     '''Вьюсет для создания причин сборов.'''
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     @extend_schema(
         request=ReasonSerializer,
@@ -52,8 +56,8 @@ class ReasonViewSet(viewsets.ViewSet):
 
     @extend_schema(
         request=ReasonSerializer,
-        responses={201: ReasonSerializer, 404: status.HTTP_404_NOT_FOUND},
-        description='Позволяет создать причину для пожертвования.'
+        responses={201: ReasonSerializer},
+        description='Позволяет создать причину для пожертвования.',
     )
     @transaction.atomic
     def create(self, request):
@@ -157,7 +161,6 @@ class PaymentViewSet(
 
 
 @extend_schema(
-    request=UserPaymentSerializer,
     responses={200: UserPaymentSerializer},
     tags=['Пользовательские платежи.'],
     description=(
@@ -166,9 +169,9 @@ class PaymentViewSet(
 )
 class UserPaymentsViewSet(viewsets.ViewSet):
     '''Вьюсет для просмотра Платежей для сбора у пользователя.'''
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsUser,)
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         user = request.user
         payment = Payment.objects.filter(email_user=user.email)
         collect_payment = CollectPayment.objects.select_related(
@@ -180,6 +183,33 @@ class UserPaymentsViewSet(viewsets.ViewSet):
                 'collect_payment': collect_payment
             }
         )
+        return Response(serializer.data)
+
+    @method_decorator(cache_page(timeout=30*60))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+
+@extend_schema(
+    responses={200: CollectSerializer},
+    tags=['Пользовательские групповые сборы.'],
+    description=(
+        'Позволяет посмотреть групповые сборы пользователя, делающего запрос.'
+    )
+)
+class UserCollectViewSet(viewsets.ViewSet):
+    '''Вьюсет для просмотра Платежей для сбора у пользователя.'''
+    permission_classes = (IsAuthenticated, IsUser,)
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        collect = (
+            Collect.objects
+            .select_related('author', 'reasons')
+            .prefetch_related('payments')
+            .filter(author=user)
+        )
+        serializer = CollectSerializer(collect, many=True)
         return Response(serializer.data)
 
     @method_decorator(cache_page(timeout=30*60))
